@@ -1,9 +1,19 @@
 package com.studio.parseviewpaises;
 
+import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -13,11 +23,20 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import static android.media.MediaRecorder.VideoSource.CAMERA;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
 
     private GoogleMap mMap;
     private Double lat, log;
     private String nome;
+
+    private SensorManager sensorManager;
+    private Sensor acelerometro;
+    Bitmap imageBitmap = null;
+
+    private int cont = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,11 +47,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        acelerometro = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if(acelerometro == null)
+            Toast.makeText(this, "Dispositivo não contém acelerador",Toast.LENGTH_LONG).show();
+
+
         if(getIntent().getExtras() != null){
             lat = Double.parseDouble(getIntent().getExtras().getString("Lat"));
             log = Double.parseDouble(getIntent().getExtras().getString("Lon"));
             nome = getIntent().getExtras().getString("Nome");
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        sensorManager.registerListener(this,acelerometro,SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        sensorManager.unregisterListener(this);
     }
 
     @Override
@@ -43,18 +84,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(Marker marker) {
-                    Intent intent = new Intent(MapsActivity.this, PhotoActivity.class);
-                    intent.putExtra("Nome",nome);
-                    startActivity(intent);
+
+                   ChamarIntent(false);//Chama a PhotoActivity sem a camera iniciada
 
                     return true;
                 }
             });
-
         }
-
-
-
     }
 
     /**
@@ -77,6 +113,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         onResume();
 
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        float x = event.values[0];
+        float y = event.values[1];
+        float z = event.values[2];
+
+
+        if(x > 20.000 || x < -15.000 || y > 20.000 || y < -15.000){
+            ChamarIntent(true);//Chama a PhotoActivity com a camera iniciada
+        }
+        
+        onStop();
+
+    }
+
+
+    public void ChamarIntent(boolean AtivarCamera){
+
+        Intent intent = new Intent(MapsActivity.this, PhotoActivity.class);
+        intent.putExtra("Nome",nome);
+        intent.putExtra("Camera",AtivarCamera);
+        startActivity(intent);
+    }
 }
+

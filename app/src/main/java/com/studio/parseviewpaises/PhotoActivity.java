@@ -48,6 +48,10 @@ public class PhotoActivity extends AppCompatActivity {
         if(getIntent().getExtras() != null){
             nome = getIntent().getExtras().getString("Nome");
             textView.setText("A foto foi tirada " + sharedPreferences.getInt(nome,0) + " vezes");
+
+            if( getIntent().getExtras().getBoolean("Camera")){
+                AtivarCamera();
+            }
         }
 
 
@@ -61,14 +65,17 @@ public class PhotoActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                Intent Intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                if (Intent.resolveActivity(getPackageManager()) != null) {
-                    startActivityForResult(Intent, CAMERA);
-                }
-
+               AtivarCamera();
             }
         });
+    }
+
+    public void AtivarCamera(){
+
+        Intent Intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (Intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(Intent, CAMERA);
+        }
     }
 
 
@@ -90,9 +97,9 @@ public class PhotoActivity extends AppCompatActivity {
 
                     textView.setText("A foto foi tirada " + sharedPreferences.getInt(nome,0) + " vezes");
             }
-
         }
     }
+
 
     @Override
     public void onBackPressed() {
